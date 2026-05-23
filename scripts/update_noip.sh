@@ -63,30 +63,30 @@ if [ -z "${PASS:-}" ]; then
     read -r -s PASS
     printf "\n" >&2
   else
-    echo "Error: password not provided and not interactive" >&2
+    echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: password not provided and not interactive" >&2
     exit 3
   fi
 fi
 
-command -v dig >/dev/null 2>&1 || { echo "dig is required" >&2; exit 4; }
-command -v curl >/dev/null 2>&1 || { echo "curl is required" >&2; exit 5; }
+command -v dig >/dev/null 2>&1 || { echo "[$(date +"%Y-%m-%d %H:%M:%S")] dig is required" >&2; exit 4; }
+command -v curl >/dev/null 2>&1 || { echo "[$(date +"%Y-%m-%d %H:%M:%S")] curl is required" >&2; exit 5; }
 
 # get A record from DNS
 DOMAIN_IP=$(dig +short A "$HOST" | grep -Eo '^[0-9.]+' | head -n1 || true)
 if [ -z "$DOMAIN_IP" ]; then
-  echo "Could not determine A record for $HOST" >&2
+  echo "[$(date +"%Y-%m-%d %H:%M:%S")] Could not determine A record for $HOST" >&2
   exit 6
 fi
 
 # get public IP
 PUBLIC_IP=$(curl -fsS --max-time 10 "$IP_PROVIDER" | tr -d ' \n' || true)
 if [ -z "$PUBLIC_IP" ]; then
-  echo "Could not determine public IP from $IP_PROVIDER" >&2
+  echo "[$(date +"%Y-%m-%d %H:%M:%S")] Could not determine public IP from $IP_PROVIDER" >&2
   exit 7
 fi
 
 if [ "$PUBLIC_IP" = "$DOMAIN_IP" ]; then
-  [ "$QUIET" -eq 0 ] && echo "No update needed: $HOST -> $PUBLIC_IP"
+  [ "$QUIET" -eq 0 ] && echo "[$(date +"%Y-%m-%d %H:%M:%S")] No update needed: $HOST -> $PUBLIC_IP"
   exit 0
 fi
 
@@ -94,14 +94,14 @@ fi
 UA="ddclient-update-script/1.0 (+https://github.com/)"
 RESPONSE=$(curl -fsS -u "$USER:$PASS" -A "$UA" --get --silent --show-error --retry 2 --retry-delay 2 \
   --max-time 20 "$SERVICE_URL" --data-urlencode "hostname=$HOST" --data-urlencode "myip=$PUBLIC_IP" | tr -d '\r') || {
-  echo "Update request failed" >&2
+  echo "[$(date +"%Y-%m-%d %H:%M:%S")] Update request failed" >&2
   exit 8
 }
 
 if echo "$RESPONSE" | grep -Eiq "^(good|nochg)"; then
-  [ "$QUIET" -eq 0 ] && echo "Update successful: $HOST -> $PUBLIC_IP ($RESPONSE)"
+  [ "$QUIET" -eq 0 ] && echo "[$(date +"%Y-%m-%d %H:%M:%S")] Update successful: $HOST -> $PUBLIC_IP ($RESPONSE)"
   exit 0
 else
-  echo "Update failed: $RESPONSE" >&2
+  echo "[$(date +"%Y-%m-%d %H:%M:%S")] Update failed: $RESPONSE" >&2
   exit 9
 fi
